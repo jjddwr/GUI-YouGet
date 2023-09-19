@@ -1,13 +1,14 @@
 package com.ingbyr.guiyouget.events
 
-import tornadofx.*
+import tornadofx.EventBus
+import tornadofx.FXEvent
 
 // you-get updates
 object RequestCheckUpdatesYouGet : FXEvent(EventBus.RunOn.BackgroundThread)
 
 class UpdateYouGetStates(val status: String) : FXEvent()
 
-// you-get updates
+// youtube-dl updates
 object RequestCheckUpdatesYoutubeDL : FXEvent(EventBus.RunOn.BackgroundThread)
 
 class UpdateYoutubeDLStates(val status: String) : FXEvent()

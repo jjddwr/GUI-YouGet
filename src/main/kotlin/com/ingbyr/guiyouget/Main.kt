@@ -3,7 +3,8 @@ package com.ingbyr.guiyouget
 import com.ingbyr.guiyouget.views.MainView
 import javafx.application.Application
 import org.slf4j.LoggerFactory
-import tornadofx.*
+import tornadofx.App
+import tornadofx.FX
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
@@ -14,8 +15,10 @@ class Main : App(MainView::class) {
     private val availableLanguages = listOf("zh", "en", "hu")
 
     init {
-//        todo comment this
-//        Locale.setDefault(Locale("test", "test"))
+
+        // TODO i18n debug mode
+         Locale.setDefault(Locale("zh", "test"))
+
         val language = Locale.getDefault().language
         if (language !in availableLanguages) {
             Locale.setDefault(Locale("en", "US"))

@@ -1,15 +1,9 @@
 package com.ingbyr.guiyouget.views
 
-import com.beust.klaxon.array
-import com.beust.klaxon.string
 import com.ingbyr.guiyouget.controllers.MediaListController
-import com.ingbyr.guiyouget.engine.YouGet
-import com.ingbyr.guiyouget.engine.YoutubeDL
-import com.ingbyr.guiyouget.events.DisplayMediasWithYouGet
-import com.ingbyr.guiyouget.events.DisplayMediasWithYoutubeDL
-import com.ingbyr.guiyouget.events.DownloadingRequestWithYouGet
-import com.ingbyr.guiyouget.events.DownloadingRequestWithYoutubeDL
-import com.ingbyr.guiyouget.utils.ContentsUtil
+import com.ingbyr.guiyouget.events.DownloadMedia
+import com.ingbyr.guiyouget.events.StopBackgroundTask
+import com.ingbyr.guiyouget.models.CurrentConfig
 import com.jfoenix.controls.JFXListView
 import javafx.application.Platform
 import javafx.scene.control.Label
@@ -17,40 +11,33 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.Pane
 import javafx.stage.StageStyle
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import tornadofx.*
 import java.util.*
 
-class MediaListView : View("GUI-YouGet") {
+class MediaListView : View() {
 
     init {
         messages = ResourceBundle.getBundle("i18n/MediaListView")
     }
 
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(MediaListView::class.java)
-    }
-
     override val root: AnchorPane by fxml("/fxml/MediaListWindow.fxml")
+    private val logger = LoggerFactory.getLogger(MediaListView::class.java)
 
     private var xOffset = 0.0
     private var yOffset = 0.0
-    private lateinit var url: String
 
     private val paneExit: Pane by fxid()
+    private val paneMinimize: Pane by fxid()
     private val paneBack: Pane by fxid()
     private val apBorder: AnchorPane by fxid()
-
-    private val controller: MediaListController by inject()
-
     private val labelTitle: Label by fxid()
     private val labelDescription: Label by fxid()
     private val listViewMedia: JFXListView<Label> by fxid()
-
+    private val controller: MediaListController by inject()
+    private var ccf = params["ccf"] as CurrentConfig
 
     init {
-        controller.subscribeEvents()
         // Window boarder
         apBorder.setOnMousePressed { event: MouseEvent? ->
             event?.let {
@@ -65,8 +52,13 @@ class MediaListView : View("GUI-YouGet") {
                 primaryStage.y = event.screenY - yOffset
             }
         }
+
         paneExit.setOnMouseClicked {
             Platform.exit()
+        }
+
+        paneMinimize.setOnMouseClicked {
+            primaryStage.isIconified = true
         }
 
         paneBack.setOnMouseClicked {
@@ -75,37 +67,47 @@ class MediaListView : View("GUI-YouGet") {
 
         listViewMedia.setOnMouseClicked {
             listViewMedia.selectedItem?.let {
-                logger.debug("select ${it.text}")
                 val formatID = it.text.split(" ")[0]
-                logger.debug("select format id is ${formatID}")
-                ProgressView().openModal(StageStyle.UNDECORATED)
-                when (app.config[ContentsUtil.DOWNLOAD_CORE]) {
-                    ContentsUtil.YOUTUBE_DL -> fire(DownloadingRequestWithYoutubeDL(YoutubeDL(url), formatID))
-                    ContentsUtil.YOU_GET -> fire(DownloadingRequestWithYouGet(YouGet(url), formatID))
-                }
+                logger.debug("start download ${it.text}, format id is $formatID")
+                ccf.formatID = formatID
+                ProgressView().openWindow(StageStyle.UNDECORATED)
+                fire(DownloadMedia(ccf))
             }
-        }
-
-        // Subscribe Events
-        subscribe<DisplayMediasWithYoutubeDL> {
-            url = it.mediaList.string("webpage_url") ?: ""
-            labelTitle.text = it.mediaList.string("title")
-            labelDescription.text = it.mediaList.string("description")
-            controller.addMediaItemsYoutubeDL(listViewMedia, it.mediaList.array("formats"))
-        }
-
-        subscribe<DisplayMediasWithYouGet> {
-            url = it.mediaList.string("url") ?: ""
-            labelTitle.text = it.mediaList.string("title")
-            labelDescription.text = ""
-            controller.addMediaItemsYouGet(listViewMedia, it.mediaList["streams"])
         }
     }
 
-    // reset the ui
-    override fun onUndock() {
-        listViewMedia.items.clear()
+    private fun displayMedia() {
+        // fetch media json and display it
+        runAsync {
+            controller.requestMedia(ccf.engineType, ccf.url, ccf.proxyType, ccf.address, ccf.port)
+        } ui {
+            if (it != null) {
+                controller.engine?.displayMediaList(labelTitle, labelDescription, listViewMedia, it)
+            } else {
+                labelTitle.text = messages["failed"]
+            }
+        }
+
+    }
+
+    private fun resetUI() {
         labelTitle.text = messages["label.loading"]
         labelDescription.text = ""
+        listViewMedia.items.clear()
+    }
+
+    override fun onUndock() {
+        /**
+         * Reset UI and clean the background task
+         */
+        resetUI()
+        // clean the thread
+        fire(StopBackgroundTask)
+    }
+
+    override fun onDock() {
+        ccf = params["ccf"] as CurrentConfig
+        resetUI()
+        displayMedia() // fetch media json and display
     }
 }
