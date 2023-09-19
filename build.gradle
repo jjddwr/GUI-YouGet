@@ -1,15 +1,15 @@
-group "com.ingbyr.guiyouget"
-version "0.2.3"
+group = "com.ingbyr.vdm"
+version = "0.2.3"
 
 buildscript {
-    ext.kotlin_version = "1.2.21"
+    ext.kotlin_version = "1.2.41"
 
     repositories {
         mavenCentral()
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath group: "de.dynamicfiles.projects.gradle.plugins", name: "javafx-gradle-plugin", version: "8.8.2"
+        classpath "de.dynamicfiles.projects.gradle.plugins:javafx-gradle-plugin:8.8.2"
     }
 }
 
@@ -26,10 +26,12 @@ repositories {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile "no.tornado:tornadofx:1.7.15"
-    compile "com.jfoenix:jfoenix:8.0.1"
-    compile "com.beust:klaxon:0.30"
-    compile group: "ch.qos.logback", name: "logback-classic", version: "1.2.3"
-    compile "com.github.kittinunf.fuel:fuel:1.12.0"
+    compile "com.jfoenix:jfoenix:8.0.3"
+    compile "com.beust:klaxon:2.1.13"
+    compile "ch.qos.logback:logback-classic:1.2.3"
+    compile "com.squareup.okhttp3:okhttp:3.10.0"
+    compile "com.squareup.okio:okio:1.14.0"
+    compile "org.mapdb:mapdb:3.0.5"
 }
 
 compileKotlin {
@@ -42,17 +44,17 @@ compileTestKotlin {
 
 jfx {
     verbose = false
-    mainClass = "com.ingbyr.guiyouget.MainKt"
-    jfxMainAppJarName="GUI-YouGet.jar"
+    mainClass = "com.ingbyr.vdm.MainKt"
+    jfxMainAppJarName = "GUI-YouGet.jar"
     vendor = "ingbyr"
     appName = "GUI-YouGet"
     additionalAppResources = "src/main/deploy"
     skipMainClassScanning = true
     jvmProperties = ["-Dfile.encoding": "UTF-8"]
     nativeReleaseVersion = "0.2.3"
-    bundler = 'exe'
+    bundler = "ALL"
     needShortcut = true
     bundleArguments = [
-            installdirChooser: 'true'
+            installdirChooser: "true"
     ]
 }
